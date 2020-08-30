@@ -8,17 +8,23 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.Manifest;
+import android.app.SearchManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -31,6 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private ImageView preview;
     private EditText  ocrResult;
     private Button select;
+    private ImageButton copy, share, search;
+    private ConnectivityManager cm;
 
     private static final int IMAGE_PICK_GALLERY_CODE = 1000;
     private static final int IMAGE_PICK_CAMERA_CODE = 2000;
@@ -50,8 +58,13 @@ public class MainActivity extends AppCompatActivity {
 
         preview = findViewById(R.id.preview);
         ocrResult = findViewById(R.id.result);
-
+        copy = findViewById(R.id.copy);
+        share = findViewById(R.id.share);
+        search = findViewById(R.id.search);
         select = findViewById(R.id.select_image);
+
+        cm = (ConnectivityManager) MainActivity.this.getSystemService(CONNECTIVITY_SERVICE);
+
 
         select.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -64,6 +77,74 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        share.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String text = ocrResult.getText().toString();
+                if(text.length()!=0){
+                    Intent i = new Intent();
+                    i.setAction(Intent.ACTION_SEND);
+                    i.putExtra(Intent.EXTRA_TEXT,text);
+                    i.setType("text/plain");
+                    startActivity(Intent.createChooser(i,"Share with"));
+
+                }
+                else {
+                    Toast.makeText(MainActivity.this, "Field empty", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+
+        copy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String text = ocrResult.getText().toString();
+                if(text.length()!=0){
+                    ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clipData = ClipData.newPlainText("Text",text);
+                    clipboardManager.setPrimaryClip(clipData);
+                    Toast.makeText(MainActivity.this, "Copied to Clipboard", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(MainActivity.this, "Field empty", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+
+        search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String text = ocrResult.getText().toString();
+                if(text.length()!=0){
+                    Search();
+                }
+                else{
+                    Toast.makeText(MainActivity.this, "Field empty", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+
+
+    }
+
+    private void Search() {
+        if(cm.getActiveNetworkInfo() != null) {
+            String text = ocrResult.getText().toString();
+            if (text.length() != 0) {
+                Intent i = new Intent(Intent.ACTION_WEB_SEARCH);
+                i.putExtra(SearchManager.QUERY, text);
+                startActivity(i);
+            } else {
+                Toast.makeText(MainActivity.this, "Field empty", Toast.LENGTH_SHORT).show();
+            }
+        }
+        else {
+            Toast.makeText(MainActivity.this, "Please check your internet connection and try again...", Toast.LENGTH_SHORT).show();
+        }
 
     }
 
